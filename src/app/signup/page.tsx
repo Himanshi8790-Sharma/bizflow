@@ -1,6 +1,6 @@
 import type { Metadata } from "next";
-import { AuthLayout } from "@/components/auth/AuthLayout";
-import { SignupForm } from "@/components/auth/SignupForm";
+import { AuthLayout } from "@/src/components/auth/AuthLayout";
+import { SignupForm } from "@/src/components/auth/SignupForm";
 
 export const metadata: Metadata = {
   title: "Create an Account | BizFlow SaaS",

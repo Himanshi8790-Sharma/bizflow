@@ -1,13 +1,23 @@
 "use client";
 
-import React, { useState } from "react";
+import React from "react";
 import Link from "next/link";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
-import { Building2, User, Mail, ArrowRight, Loader2, AlertTriangle, CheckCircle2 } from "lucide-react";
+import {
+  Building2,
+  User,
+  Mail,
+  ArrowRight,
+  Loader2,
+  AlertTriangle,
+  CheckCircle2,
+} from "lucide-react";
+
 import { FormInput } from "./FormInput";
 import { PasswordInput } from "./PasswordInput";
+import { useSignup } from "@/src/hooks/useAuth";
 
 const signupSchema = z
   .object({
@@ -47,9 +57,15 @@ const signupSchema = z
 export type SignupFormData = z.infer<typeof signupSchema>;
 
 export function SignupForm() {
-  const [isLoading, setIsLoading] = useState(false);
-  const [serverError, setServerError] = useState<string | null>(null);
-  const [isSuccess, setIsSuccess] = useState(false);
+  // TanStack Query mutation
+  const {
+    mutate: signup,
+    isPending,
+    isSuccess,
+    isError,
+    error,
+    reset,
+  } = useSignup();
 
   const {
     register,
@@ -57,6 +73,7 @@ export function SignupForm() {
     formState: { errors },
   } = useForm<SignupFormData>({
     resolver: zodResolver(signupSchema),
+
     defaultValues: {
       organizationName: "",
       name: "",
@@ -67,59 +84,91 @@ export function SignupForm() {
     },
   });
 
-  const onSubmit = async (data: SignupFormData) => {
-    setIsLoading(true);
-    setServerError(null);
+  // ============================
+  // SIGNUP API CALL
+  // ============================
 
-    const backendPayload = {
-      organizationName: data.organizationName,
-      name: data.name,
-      email: data.email,
+  const onSubmit = (data: SignupFormData) => {
+    const payload = {
+      organizationName: data.organizationName.trim(),
+      name: data.name.trim(),
+      email: data.email.trim().toLowerCase(),
       password: data.password,
     };
 
-    console.log("[BizFlow Auth] Submitting Signup Backend Payload:", backendPayload);
+    console.log("[BizFlow Auth] Signup request:", {
+      organizationName: payload.organizationName,
+      name: payload.name,
+      email: payload.email,
+    });
 
-    try {
-      await new Promise((resolve) => setTimeout(resolve, 1200));
-      setIsSuccess(true);
-    } catch (err) {
-      setServerError("An account with this email address already exists.");
-    } finally {
-      setIsLoading(false);
-    }
+    signup(payload);
   };
 
   return (
     <div className="space-y-4">
-      {serverError && (
+
+      {/* ============================
+          API ERROR
+      ============================ */}
+
+      {isError && (
         <div className="flex items-center gap-2.5 p-3 rounded-lg bg-destructive/10 border border-destructive/20 text-destructive text-xs font-medium animate-fade-in-rise">
           <AlertTriangle className="w-4 h-4 shrink-0" />
-          <span>{serverError}</span>
+
+          <span>
+            {error instanceof Error
+              ? error.message
+              : "Unable to create your account. Please try again."}
+          </span>
         </div>
       )}
 
+      {/* ============================
+          SUCCESS
+      ============================ */}
+
       {isSuccess ? (
         <div className="p-5 rounded-xl bg-emerald-500/10 border border-emerald-500/20 text-center space-y-2 animate-fade-in-rise">
+
           <div className="w-10 h-10 rounded-full bg-emerald-500 text-white flex items-center justify-center mx-auto shadow-sm">
             <CheckCircle2 className="w-5 h-5" />
           </div>
-          <h3 className="text-base font-bold text-foreground">Organization Created!</h3>
+
+          <h3 className="text-base font-bold text-foreground">
+            Organization Created!
+          </h3>
+
           <p className="text-xs text-muted-foreground leading-relaxed">
             Your BizFlow workspace is ready. Check your email for verification.
           </p>
+
           <div className="pt-2">
             <Link
               href="/login"
               className="inline-flex items-center justify-center gap-2 rounded-lg bg-primary text-primary-foreground px-4 py-2 text-xs font-semibold shadow-sm hover:brightness-110 transition-all"
             >
-              Proceed to Sign in <ArrowRight className="w-3.5 h-3.5" />
+              Proceed to Sign in
+
+              <ArrowRight className="w-3.5 h-3.5" />
             </Link>
           </div>
+
         </div>
       ) : (
-        <form onSubmit={handleSubmit(onSubmit)} className="space-y-2.5 sm:space-y-3" noValidate>
+
+        /* ============================
+           SIGNUP FORM
+        ============================ */
+
+        <form
+          onSubmit={handleSubmit(onSubmit)}
+          className="space-y-2.5 sm:space-y-3"
+          noValidate
+        >
+
           {/* Organization Name */}
+
           <FormInput
             id="organizationName"
             type="text"
@@ -127,11 +176,12 @@ export function SignupForm() {
             placeholder="Acme Corp or BizFlow Inc."
             icon={<Building2 className="w-4 h-4" />}
             error={errors.organizationName?.message}
-            disabled={isLoading}
+            disabled={isPending}
             {...register("organizationName")}
           />
 
           {/* Full Name */}
+
           <FormInput
             id="name"
             type="text"
@@ -139,11 +189,12 @@ export function SignupForm() {
             placeholder="Alex Morgan"
             icon={<User className="w-4 h-4" />}
             error={errors.name?.message}
-            disabled={isLoading}
+            disabled={isPending}
             {...register("name")}
           />
 
           {/* Email */}
+
           <FormInput
             id="email"
             type="email"
@@ -151,51 +202,66 @@ export function SignupForm() {
             placeholder="alex@acme.com"
             icon={<Mail className="w-4 h-4" />}
             error={errors.email?.message}
-            disabled={isLoading}
+            disabled={isPending}
             {...register("email")}
           />
 
-          {/* Password with Strength Meter */}
+          {/* Password */}
+
           <PasswordInput
             id="password"
             label="Password"
             placeholder="Min 8 characters"
             showStrengthMeter
             error={errors.password?.message}
-            disabled={isLoading}
+            disabled={isPending}
             {...register("password")}
           />
 
           {/* Confirm Password */}
+
           <PasswordInput
             id="confirmPassword"
             label="Confirm Password"
             placeholder="Re-enter your password"
             error={errors.confirmPassword?.message}
-            disabled={isLoading}
+            disabled={isPending}
             {...register("confirmPassword")}
           />
 
-          {/* Terms Checkbox */}
+          {/* Terms */}
+
           <div className="pt-0.5">
             <label className="flex items-start gap-2 cursor-pointer select-none text-[11px] text-muted-foreground">
+
               <input
                 type="checkbox"
-                disabled={isLoading}
+                disabled={isPending}
                 {...register("agreeToTerms")}
                 className="mt-0.5 w-3.5 h-3.5 rounded border-input bg-card text-primary focus:ring-ring accent-primary shrink-0"
               />
+
               <span>
                 I agree to BizFlow&apos;s{" "}
-                <a href="#" className="underline font-medium text-foreground hover:text-primary">
+
+                <a
+                  href="#"
+                  className="underline font-medium text-foreground hover:text-primary"
+                >
                   Terms of Service
                 </a>{" "}
                 and{" "}
-                <a href="#" className="underline font-medium text-foreground hover:text-primary">
+
+                <a
+                  href="#"
+                  className="underline font-medium text-foreground hover:text-primary"
+                >
                   Privacy Policy
                 </a>
               </span>
+
             </label>
+
             {errors.agreeToTerms && (
               <p className="mt-0.5 text-[11px] text-destructive font-medium">
                 {errors.agreeToTerms.message}
@@ -204,12 +270,13 @@ export function SignupForm() {
           </div>
 
           {/* Submit Button */}
+
           <button
             type="submit"
-            disabled={isLoading}
+            disabled={isPending}
             className="w-full flex items-center justify-center gap-2 rounded-lg bg-primary text-primary-foreground py-2.5 px-4 text-xs sm:text-sm font-semibold shadow-sm hover:brightness-110 active:scale-[0.99] transition-all duration-150 disabled:opacity-60 disabled:cursor-not-allowed mt-1"
           >
-            {isLoading ? (
+            {isPending ? (
               <>
                 <Loader2 className="w-4 h-4 animate-spin" />
                 <span>Creating workspace...</span>
@@ -221,12 +288,17 @@ export function SignupForm() {
               </>
             )}
           </button>
+
         </form>
       )}
 
-      {/* Switch to Login Link */}
+      {/* ============================
+          LOGIN LINK
+      ============================ */}
+
       <p className="text-center text-xs text-muted-foreground pt-1">
         Already have an account?{" "}
+
         <Link
           href="/login"
           className="font-semibold text-primary hover:underline transition-colors"
@@ -234,6 +306,8 @@ export function SignupForm() {
           Sign in
         </Link>
       </p>
+
     </div>
   );
 }
+

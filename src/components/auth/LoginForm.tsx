@@ -1,6 +1,5 @@
 "use client";
 
-import React, { useState } from "react";
 import Link from "next/link";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
@@ -8,6 +7,7 @@ import { z } from "zod";
 import { Mail, ArrowRight, Loader2, AlertTriangle, CheckCircle2 } from "lucide-react";
 import { FormInput } from "./FormInput";
 import { PasswordInput } from "./PasswordInput";
+import { useLogin } from "@/src/hooks/useAuth";
 
 const loginSchema = z.object({
   email: z
@@ -26,9 +26,7 @@ const loginSchema = z.object({
 export type LoginFormData = z.infer<typeof loginSchema>;
 
 export function LoginForm() {
-  const [isLoading, setIsLoading] = useState(false);
-  const [serverError, setServerError] = useState<string | null>(null);
-  const [isSuccess, setIsSuccess] = useState(false);
+const loginMutation = useLogin();
 
   const {
     register,
@@ -44,36 +42,23 @@ export function LoginForm() {
   });
 
   const onSubmit = async (data: LoginFormData) => {
-    setIsLoading(true);
-    setServerError(null);
-
-    const payload = {
-      email: data.email,
-      password: data.password,
-    };
-
-    console.log("[BizFlow Auth] Submitting Login Payload:", payload);
-
-    try {
-      await new Promise((resolve) => setTimeout(resolve, 1000));
-      setIsSuccess(true);
-    } catch (err) {
-      setServerError("Invalid email or password. Please try again.");
-    } finally {
-      setIsLoading(false);
-    }
+    loginMutation.mutate({
+      email:data.email,
+      password:data.password,
+    })
   };
 
   return (
     <div className="space-y-4">
-      {serverError && (
+      {loginMutation.isError && (
         <div className="flex items-center gap-2.5 p-3 rounded-lg bg-destructive/10 border border-destructive/20 text-destructive text-xs font-medium animate-fade-in-rise">
           <AlertTriangle className="w-4 h-4 shrink-0" />
-          <span>{serverError}</span>
+          {/* <span>{serverError}</span> */}
+          
         </div>
       )}
 
-      {isSuccess ? (
+      {loginMutation.isSuccess ? (
         <div className="p-5 rounded-xl bg-emerald-500/10 border border-emerald-500/20 text-center space-y-2 animate-fade-in-rise">
           <div className="w-10 h-10 rounded-full bg-emerald-500 text-white flex items-center justify-center mx-auto shadow-sm">
             <CheckCircle2 className="w-5 h-5" />
@@ -93,7 +78,7 @@ export function LoginForm() {
             placeholder="name@company.com"
             icon={<Mail className="w-4 h-4" />}
             error={errors.email?.message}
-            disabled={isLoading}
+            disabled={loginMutation.isPending}
             {...register("email")}
           />
 
@@ -103,7 +88,7 @@ export function LoginForm() {
             label="Password"
             placeholder="••••••••••••"
             error={errors.password?.message}
-            disabled={isLoading}
+            disabled={loginMutation.isPending}
             {...register("password")}
           />
 
@@ -112,7 +97,7 @@ export function LoginForm() {
             <label className="flex items-center gap-2 cursor-pointer select-none text-muted-foreground hover:text-foreground">
               <input
                 type="checkbox"
-                disabled={isLoading}
+                disabled={loginMutation.isPending}
                 {...register("rememberMe")}
                 className="w-3.5 h-3.5 rounded border-input bg-card text-primary focus:ring-ring accent-primary cursor-pointer"
               />
@@ -134,10 +119,10 @@ export function LoginForm() {
           {/* Submit Button */}
           <button
             type="submit"
-            disabled={isLoading}
+            disabled={loginMutation.isPending}
             className="w-full flex items-center justify-center gap-2 rounded-lg bg-primary text-primary-foreground py-2.5 px-4 text-xs sm:text-sm font-semibold shadow-sm hover:brightness-110 active:scale-[0.99] transition-all duration-150 disabled:opacity-60 disabled:cursor-not-allowed mt-1"
           >
-            {isLoading ? (
+            {loginMutation.isPending ? (
               <>
                 <Loader2 className="w-4 h-4 animate-spin" />
                 <span>Signing in...</span>
@@ -168,7 +153,7 @@ export function LoginForm() {
       <div className="grid grid-cols-1">
         <button
           type="button"
-          disabled={isLoading}
+          disabled={loginMutation.isPending}
           onClick={() => console.log("Google Login placeholder")}
           className="flex items-center justify-center gap-2 rounded-lg border border-input bg-card px-3 py-2 text-xs font-medium text-foreground hover:bg-muted/50 hover:border-muted-foreground/30 transition-all duration-150 focus:outline-none focus:ring-2 focus:ring-ring"
         >
