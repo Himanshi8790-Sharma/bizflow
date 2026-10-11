@@ -33,14 +33,33 @@ export interface SignupResponse {
   };
 }
 
+
+export interface MeResponse {
+  user: {
+    id: string;
+    name: string;
+    email: string;
+    role: string;
+  };
+  organization: {
+    id: string;
+    name: string;
+  };
+}
+
 export const authService = {
   login: async (payload: LoginPayload): Promise<LoginResponse> => {
-    const response = await api.post<LoginResponse>("/login", payload);
+    const response = await api.post<LoginResponse>("/auth/login", payload);
     return response.data;
   },
   signup: async (payload: SignupPayload): Promise<SignupResponse> => {
-    const response = await api.post<SignupResponse>("/register", payload);
+    const response = await api.post<SignupResponse>("/auth/register", payload);
 
+    return response.data;
+  },
+
+    me: async (): Promise<MeResponse> => {
+    const response = await api.get<MeResponse>("/auth/me");
     return response.data;
   },
 };

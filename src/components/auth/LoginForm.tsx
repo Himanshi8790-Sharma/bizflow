@@ -8,6 +8,7 @@ import { Mail, ArrowRight, Loader2, AlertTriangle, CheckCircle2 } from "lucide-r
 import { FormInput } from "./FormInput";
 import { PasswordInput } from "./PasswordInput";
 import { useLogin } from "@/src/hooks/useAuth";
+import { useRouter } from "next/navigation";
 
 const loginSchema = z.object({
   email: z
@@ -27,6 +28,7 @@ export type LoginFormData = z.infer<typeof loginSchema>;
 
 export function LoginForm() {
 const loginMutation = useLogin();
+ const router = useRouter();
 
   const {
     register,
@@ -41,12 +43,19 @@ const loginMutation = useLogin();
     },
   });
 
-  const onSubmit = async (data: LoginFormData) => {
-    loginMutation.mutate({
-      email:data.email,
-      password:data.password,
-    })
-  };
+ const onSubmit = async (data: LoginFormData) => {
+  try {
+    await loginMutation.mutateAsync({
+      email: data.email,
+      password: data.password,
+    });
+
+    router.replace("/dashboard");
+  } catch (error) {
+    // The mutation's isError state will display the error.
+    console.error("Login failed:", error);
+  }
+};
 
   return (
     <div className="space-y-4">
@@ -54,6 +63,11 @@ const loginMutation = useLogin();
         <div className="flex items-center gap-2.5 p-3 rounded-lg bg-destructive/10 border border-destructive/20 text-destructive text-xs font-medium animate-fade-in-rise">
           <AlertTriangle className="w-4 h-4 shrink-0" />
           {/* <span>{serverError}</span> */}
+          <span>
+  {loginMutation.error instanceof Error
+    ? loginMutation.error.message
+    : "Login failed. Please check your credentials and try again."}
+</span>
           
         </div>
       )}

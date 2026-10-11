@@ -1,4 +1,4 @@
-import { useMutation } from "@tanstack/react-query";
+import { useMutation, useQuery } from "@tanstack/react-query";
 import { authService } from "../services/auth.service";
 
 export function useLogin(){
@@ -9,5 +9,13 @@ export function useLogin(){
 export function useSignup() {
   return useMutation({
     mutationFn: authService.signup,
+  });
+}
+
+export function useMe() {
+  return useQuery({
+    queryKey: ["auth", "me"],
+    queryFn: authService.me,
+    retry: false,
   });
 }
