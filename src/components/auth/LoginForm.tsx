@@ -74,13 +74,13 @@ const loginMutation = useLogin();
 
       {loginMutation.isSuccess ? (
         <div className="p-5 rounded-xl bg-emerald-500/10 border border-emerald-500/20 text-center space-y-2 animate-fade-in-rise">
-          <div className="w-10 h-10 rounded-full bg-emerald-500 text-white flex items-center justify-center mx-auto shadow-sm">
+          {/* <div className="w-10 h-10 rounded-full bg-emerald-500 text-white flex items-center justify-center mx-auto shadow-sm">
             <CheckCircle2 className="w-5 h-5" />
           </div>
           <h3 className="text-base font-bold text-foreground">Welcome back!</h3>
           <p className="text-xs text-muted-foreground">
             Authentication successful. Redirecting to your dashboard...
-          </p>
+          </p> */}
         </div>
       ) : (
         <form onSubmit={handleSubmit(onSubmit)} className="space-y-3.5" noValidate>
