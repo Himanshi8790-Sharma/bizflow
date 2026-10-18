@@ -11,6 +11,7 @@ import ProductFormDialog from "@/src/components/products/ProductFormDialog";
 import ProductDeleteDialog from "@/src/components/products/ProductDeleteDialog";
 import { getProductColumns } from "@/src/components/products/ProductColumns";
 import ProductActions from "@/src/components/products/ProductActions";
+import { getErrorMessage } from "@/src/lib/utils";
 
 import {
   useProducts,
@@ -212,7 +213,11 @@ export default function ProductsPage() {
   return (
     <DashboardLayout>
       <div className="mx-auto w-full max-w-7xl">
-        <ProductsPageHeader onAddProduct={handleAddProduct} />
+        <ProductsPageHeader
+          totalProducts={data?.pagination.total}
+          onAddProduct={handleAddProduct}
+          canCreate={canCreate}
+        />
 
         {!canCreate && role && (
           <div className="mb-5 rounded-xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-800 dark:border-amber-900 dark:bg-amber-950/30 dark:text-amber-300">
@@ -288,31 +293,4 @@ export default function ProductsPage() {
     </DashboardLayout>
   );
 }
-
-function getErrorMessage(error: unknown, fallback: string): string {
-  if (
-    typeof error === "object" &&
-    error !== null &&
-    "response" in error
-  ) {
-    const response = (
-      error as {
-        response?: {
-          data?: {
-            message?: string;
-          };
-        };
-      }
-    ).response;
-
-    if (response?.data?.message) {
-      return response.data.message;
-    }
-  }
-
-  if (error instanceof Error && error.message) {
-    return error.message;
-  }
-
-  return fallback;
-}
+

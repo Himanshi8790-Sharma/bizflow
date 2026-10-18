@@ -22,7 +22,8 @@ export interface RevenueTrendResponse {
 
 export interface TopProduct {
   productId: string;
-  name: string;
+  productName: string;
+  name?: string;
   quantitySold: number;
   revenue: number;
 }
@@ -31,7 +32,6 @@ export interface TopProductsResponse {
   success: boolean;
   data: TopProduct[];
 }
-
 
 export interface OrderStatusItem {
   status: string;
@@ -43,10 +43,10 @@ export interface OrderStatusResponse {
   data: OrderStatusItem[];
 }
 
-
 export interface ExpenseCategory {
   category: string;
-  total: number;
+  amount: number;
+  total?: number;
 }
 
 export interface ExpensesByCategoryResponse {

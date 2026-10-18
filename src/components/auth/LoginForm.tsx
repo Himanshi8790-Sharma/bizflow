@@ -10,6 +10,8 @@ import { PasswordInput } from "./PasswordInput";
 import { useLogin } from "@/src/hooks/useAuth";
 import { useRouter } from "next/navigation";
 
+import { getErrorMessage } from "@/src/lib/utils";
+
 const loginSchema = z.object({
   email: z
     .string()
@@ -64,10 +66,11 @@ const loginMutation = useLogin();
           <AlertTriangle className="w-4 h-4 shrink-0" />
           {/* <span>{serverError}</span> */}
           <span>
-  {loginMutation.error instanceof Error
-    ? loginMutation.error.message
-    : "Login failed. Please check your credentials and try again."}
-</span>
+            {getErrorMessage(
+              loginMutation.error,
+              "Login failed. Please check your credentials and try again."
+            )}
+          </span>
           
         </div>
       )}

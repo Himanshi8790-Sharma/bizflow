@@ -18,6 +18,7 @@ import {
 import { FormInput } from "./FormInput";
 import { PasswordInput } from "./PasswordInput";
 import { useSignup } from "@/src/hooks/useAuth";
+import { getErrorMessage } from "@/src/lib/utils";
 
 const signupSchema = z
   .object({
@@ -117,9 +118,10 @@ export function SignupForm() {
           <AlertTriangle className="w-4 h-4 shrink-0" />
 
           <span>
-            {error instanceof Error
-              ? error.message
-              : "Unable to create your account. Please try again."}
+            {getErrorMessage(
+              error,
+              "Unable to create your account. Please try again."
+            )}
           </span>
         </div>
       )}
