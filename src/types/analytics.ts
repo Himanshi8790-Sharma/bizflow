@@ -1,5 +1,7 @@
 export interface AnalyticsSummary {
   totalRevenue: number;
+  totalExpenses: number;
+  estimatedProfit: number;
   totalOrders: number;
   totalCustomers: number;
   pendingOrders: number;
