@@ -13,6 +13,7 @@ import {
   HelpCircle,
   Lightbulb,
 } from "lucide-react";
+import { useAskAI } from "@/src/hooks/useAI";
 import DashboardLayout from "@/src/components/dashboard/DashboardLayout";
 import { useAnalyticsSummary, useExpensesByCategory, useTopProducts } from "@/src/hooks/useAnalytics";
 import { useProducts } from "@/src/hooks/useProducts";
@@ -72,63 +73,69 @@ export default function AiAssistantPage() {
   const { data: expenses } = useExpensesByCategory();
   const { data: productsData } = useProducts(1, 100);
   const { data: orders } = useOrders();
+  const askAIMutation = useAskAI();
 
-  const handleAsk = (queryText: string, forcedCategory?: ChatMessage["category"]) => {
-    if (!queryText.trim() || isThinking) return;
+ const handleAsk = async (
+  queryText: string,
+  forcedCategory?: ChatMessage["category"]
+) => {
+  const question = queryText.trim();
 
-    const userMsg: ChatMessage = {
-      id: `msg-${Date.now()}`,
-      sender: "user",
-      text: queryText.trim(),
+  if (!question || isThinking) return;
+
+  const userMsg: ChatMessage = {
+    id: `msg-${Date.now()}`,
+    sender: "user",
+    text: question,
+    timestamp: new Date(),
+  };
+
+  setMessages((prev) => [...prev, userMsg]);
+  setInputValue("");
+  setIsThinking(true);
+
+  try {
+    const result = await askAIMutation.mutateAsync(question);
+
+    const assistantMsg: ChatMessage = {
+      id: `msg-${Date.now() + 1}`,
+      sender: "assistant",
+      text: result.data.answer,
+      category: result.data.queryType || forcedCategory || "GENERAL",
       timestamp: new Date(),
     };
 
-    setMessages((prev) => [...prev, userMsg]);
-    setInputValue("");
-    setIsThinking(true);
+    setMessages((prev) => [...prev, assistantMsg]);
+  } catch (error: unknown) {
+    let errorMessage = "Sorry, I couldn't process your question. Please try again.";
 
-    setTimeout(() => {
-      const q = queryText.toLowerCase();
-      let response = "";
-      let category: ChatMessage["category"] = forcedCategory || "GENERAL";
+    if (typeof error === "object" && error !== null && "response" in error) {
+      const response = (
+        error as {
+          response?: {
+            data?: {
+              message?: string;
+            };
+          };
+        }
+      ).response;
 
-      if (q.includes("sale") || q.includes("revenue") || q.includes("product") || category === "SALES") {
-        category = "SALES";
-        const rev = summary?.totalRevenue ? formatCurrency(summary.totalRevenue) : "₹0.00";
-        const topList = topProducts?.map((p, i) => `${i + 1}. ${p.productName || p.name} (${p.quantitySold} units sold, ${formatCurrency(p.revenue)})`).join("\n") || "No product sales recorded yet.";
-        response = `📊 **Sales & Revenue Analysis**\n\n• **Total Realized Revenue:** ${rev}\n• **Total Orders Recorded:** ${summary?.totalOrders ?? 0}\n\n**Top Performing Products:**\n${topList}\n\n💡 *Actionable Insight:* Promote your best-selling product in email campaigns and ensure safety stock is maintained to avoid stockouts.`;
-      } else if (q.includes("stock") || q.includes("inventory") || category === "INVENTORY") {
-        category = "INVENTORY";
-        const allProds = productsData?.products ?? [];
-        const lowStock = allProds.filter((p) => p.stockQuantity <= p.lowStockLimit);
-        const outOfStock = allProds.filter((p) => p.stockQuantity <= 0);
+      errorMessage = response?.data?.message || errorMessage;
+    }
 
-        response = `📦 **Inventory Health Report**\n\n• **Catalog Size:** ${allProds.length} items\n• **Healthy Stock:** ${allProds.length - lowStock.length} items\n• **Low Stock Warnings:** ${lowStock.length} items\n• **Out of Stock:** ${outOfStock.length} items\n\n${
-          lowStock.length > 0
-            ? `**Attention Required on:**\n${lowStock.map((p) => `• ${p.name} (Stock: ${p.stockQuantity}, Threshold: ${p.lowStockLimit})`).join("\n")}`
-            : "✅ All inventory items are currently at healthy stock quantities."
-        }\n\n💡 *Actionable Insight:* Initiate vendor purchase orders for items near or below their threshold.`;
-      } else if (q.includes("expense") || q.includes("spend") || q.includes("cost") || category === "EXPENSE") {
-        category = "EXPENSE";
-        const expList = expenses?.map((e) => `• ${e.category || "General"}: ${formatCurrency(e.amount ?? e.total ?? 0)}`).join("\n") || "No expense logs currently registered.";
-        const totalExp = expenses?.reduce((acc, curr) => acc + (curr.amount ?? curr.total ?? 0), 0) ?? 0;
-        response = `💸 **Operational Expenses Summary**\n\n• **Total Recorded Spending:** ${formatCurrency(totalExp)}\n\n**Category Distribution:**\n${expList}\n\n💡 *Actionable Insight:* Review recurring supplier costs to negotiate volume discounts.`;
-      } else {
-        response = `💼 **Executive Business Snapshot**\n\n• **Total Revenue:** ${formatCurrency(summary?.totalRevenue ?? 0)}\n• **Total Orders:** ${summary?.totalOrders ?? 0} (${summary?.pendingOrders ?? 0} pending)\n• **Active Customer Accounts:** ${summary?.totalCustomers ?? 0}\n• **Catalog Products:** ${productsData?.products?.length ?? 0} products\n\nEverything in your BizFlow system is synced in real-time. Ask me more specific questions regarding sales, inventory, or expenses anytime!`;
-      }
+    const assistantMsg: ChatMessage = {
+      id: `msg-${Date.now() + 1}`,
+      sender: "assistant",
+      text: errorMessage,
+      category: forcedCategory || "GENERAL",
+      timestamp: new Date(),
+    };
 
-      const assistantMsg: ChatMessage = {
-        id: `msg-${Date.now() + 1}`,
-        sender: "assistant",
-        text: response,
-        category,
-        timestamp: new Date(),
-      };
-
-      setMessages((prev) => [...prev, assistantMsg]);
-      setIsThinking(false);
-    }, 600);
-  };
+    setMessages((prev) => [...prev, assistantMsg]);
+  } finally {
+    setIsThinking(false);
+  }
+};
 
   return (
     <DashboardLayout>
