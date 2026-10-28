@@ -1,6 +1,5 @@
 "use client";
 
-import { useState } from "react";
 import { useRouter } from "next/navigation";
 import {
   Settings,
@@ -14,10 +13,18 @@ import {
   LogOut,
   Check,
 } from "lucide-react";
+
 import DashboardLayout from "@/src/components/dashboard/DashboardLayout";
 import { useMe, useLogout } from "@/src/hooks/useAuth";
 import { useTheme } from "@/src/components/providers/ThemeProvider";
 import { toast } from "sonner";
+
+import TeamManagement from "@/src/components/settings/TeamManagement";
+import type { TeamRole } from "@/src/types/team.types";
+
+function isTeamRole(role: string): role is TeamRole {
+  return role === "ADMIN" || role === "MANAGER" || role === "EMPLOYEE";
+}
 
 export default function SettingsPage() {
   const router = useRouter();
@@ -30,6 +37,11 @@ export default function SettingsPage() {
   const userRole = data?.user?.role ?? "EMPLOYEE";
   const orgName = data?.organization?.name ?? "Organization";
   const orgId = data?.organization?.id ?? "";
+
+  const normalizedUserRole = userRole.trim().toUpperCase();
+  const currentUserRole = isTeamRole(normalizedUserRole)
+    ? normalizedUserRole
+    : undefined;
 
   const formattedRole = userRole
     ? userRole.charAt(0) + userRole.slice(1).toLowerCase()
@@ -67,8 +79,11 @@ export default function SettingsPage() {
 
         {/* 1. Organization Profile */}
         <section className="rounded-2xl border border-gray-200/80 bg-white p-6 shadow-xs dark:border-gray-800 dark:bg-gray-900">
-          <div className="flex items-center gap-2 mb-4">
-            <Building2 size={18} className="text-indigo-600 dark:text-indigo-400" />
+          <div className="mb-4 flex items-center gap-2">
+            <Building2
+              size={18}
+              className="text-indigo-600 dark:text-indigo-400"
+            />
             <h2 className="text-base font-bold text-gray-900 dark:text-white">
               Organization Details
             </h2>
@@ -102,10 +117,18 @@ export default function SettingsPage() {
           </div>
         </section>
 
-        {/* 2. User Profile */}
+        {/* 2. Team Management */}
+        {currentUserRole === "ADMIN" && (
+          <TeamManagement currentUserRole={currentUserRole} />
+        )}
+
+        {/* 3. User Profile */}
         <section className="rounded-2xl border border-gray-200/80 bg-white p-6 shadow-xs dark:border-gray-800 dark:bg-gray-900">
-          <div className="flex items-center gap-2 mb-4">
-            <User size={18} className="text-indigo-600 dark:text-indigo-400" />
+          <div className="mb-4 flex items-center gap-2">
+            <User
+              size={18}
+              className="text-indigo-600 dark:text-indigo-400"
+            />
             <h2 className="text-base font-bold text-gray-900 dark:text-white">
               User Profile
             </h2>
@@ -144,15 +167,19 @@ export default function SettingsPage() {
           </div>
         </section>
 
-        {/* 3. Theme & Appearance */}
+        {/* 4. Theme & Appearance */}
         <section className="rounded-2xl border border-gray-200/80 bg-white p-6 shadow-xs dark:border-gray-800 dark:bg-gray-900">
-          <div className="flex items-center gap-2 mb-2">
-            <Palette size={18} className="text-indigo-600 dark:text-indigo-400" />
+          <div className="mb-2 flex items-center gap-2">
+            <Palette
+              size={18}
+              className="text-indigo-600 dark:text-indigo-400"
+            />
             <h2 className="text-base font-bold text-gray-900 dark:text-white">
               Interface Theme
             </h2>
           </div>
-          <p className="text-xs text-gray-500 dark:text-gray-400 mb-4">
+
+          <p className="mb-4 text-xs text-gray-500 dark:text-gray-400">
             Choose your preferred color theme across the entire application workspace.
           </p>
 
@@ -170,11 +197,17 @@ export default function SettingsPage() {
               <div className="flex items-center gap-3">
                 <Sun className="h-5 w-5 text-amber-500" />
                 <div>
-                  <p className="text-xs font-bold text-gray-900 dark:text-white">Light</p>
-                  <p className="text-[11px] text-gray-500">Clean bright background</p>
+                  <p className="text-xs font-bold text-gray-900 dark:text-white">
+                    Light
+                  </p>
+                  <p className="text-[11px] text-gray-500">
+                    Clean bright background
+                  </p>
                 </div>
               </div>
-              {theme === "light" && <Check size={16} className="text-indigo-600" />}
+              {theme === "light" && (
+                <Check size={16} className="text-indigo-600" />
+              )}
             </button>
 
             {/* Dark */}
@@ -190,11 +223,17 @@ export default function SettingsPage() {
               <div className="flex items-center gap-3">
                 <Moon className="h-5 w-5 text-indigo-400" />
                 <div>
-                  <p className="text-xs font-bold text-gray-900 dark:text-white">Dark</p>
-                  <p className="text-[11px] text-gray-500">Deep obsidian palette</p>
+                  <p className="text-xs font-bold text-gray-900 dark:text-white">
+                    Dark
+                  </p>
+                  <p className="text-[11px] text-gray-500">
+                    Deep obsidian palette
+                  </p>
                 </div>
               </div>
-              {theme === "dark" && <Check size={16} className="text-indigo-600" />}
+              {theme === "dark" && (
+                <Check size={16} className="text-indigo-600" />
+              )}
             </button>
 
             {/* System */}
@@ -210,16 +249,22 @@ export default function SettingsPage() {
               <div className="flex items-center gap-3">
                 <Laptop className="h-5 w-5 text-gray-400" />
                 <div>
-                  <p className="text-xs font-bold text-gray-900 dark:text-white">System</p>
-                  <p className="text-[11px] text-gray-500">Sync with OS preference</p>
+                  <p className="text-xs font-bold text-gray-900 dark:text-white">
+                    System
+                  </p>
+                  <p className="text-[11px] text-gray-500">
+                    Sync with OS preference
+                  </p>
                 </div>
               </div>
-              {theme === "system" && <Check size={16} className="text-indigo-600" />}
+              {theme === "system" && (
+                <Check size={16} className="text-indigo-600" />
+              )}
             </button>
           </div>
         </section>
 
-        {/* 4. Session & Security */}
+        {/* 5. Session & Security */}
         <section className="rounded-2xl border border-red-200/80 bg-red-50/20 p-6 shadow-xs dark:border-red-950/40 dark:bg-red-950/10">
           <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
             <div>
@@ -238,7 +283,9 @@ export default function SettingsPage() {
               className="inline-flex items-center justify-center gap-2 rounded-xl bg-red-600 px-5 py-2.5 text-xs font-semibold text-white shadow-xs transition hover:bg-red-700 disabled:opacity-50"
             >
               <LogOut size={15} />
-              {logoutMutation.isPending ? "Signing out..." : "Sign Out"}
+              {logoutMutation.isPending
+                ? "Signing out..."
+                : "Sign Out"}
             </button>
           </div>
         </section>
