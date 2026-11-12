@@ -1,3 +1,4 @@
+
 "use client";
 
 import { useState } from "react";
@@ -10,19 +11,15 @@ import {
   Shield,
   Loader2,
 } from "lucide-react";
-import type { TeamRole } from "@/src/types/team.types";
 
+import type { TeamRole, TeamMember } from "@/src/types/team.types";
 
 import {
   useTeamMembers,
-  useCreateTeamInvitation,
+  useCreateTeamMember,
   useUpdateTeamRole,
   useRemoveTeamMember,
-} from "@/src/hooks/useTeam"; 
-
-import type {
-  TeamMember,
-} from "@/src/types/team.types";
+} from "@/src/hooks/useTeam";
 
 type AssignableTeamRole = "MANAGER" | "EMPLOYEE";
 
@@ -47,7 +44,8 @@ export default function TeamManagement({
 }: TeamManagementProps) {
   const [name, setName] = useState("");
   const [email, setEmail] = useState("");
-  const [role, setRole] = useState<"MANAGER" | "EMPLOYEE">("EMPLOYEE");
+  const [password, setPassword] = useState("");
+  const [role, setRole] = useState<AssignableTeamRole>("EMPLOYEE");
 
   const {
     data: members = [],
@@ -55,44 +53,56 @@ export default function TeamManagement({
     isError,
     error: membersError,
   } = useTeamMembers();
-  const inviteMutation = useCreateTeamInvitation();
+
+  const createMutation = useCreateTeamMember();
   const updateRoleMutation = useUpdateTeamRole();
   const removeMutation = useRemoveTeamMember();
 
   const isAdmin = currentUserRole === "ADMIN";
 
-  async function handleInvite(event: React.FormEvent<HTMLFormElement>) {
+  async function handleCreateMember(
+    event: React.FormEvent<HTMLFormElement>,
+  ) {
     event.preventDefault();
 
     try {
-      await inviteMutation.mutateAsync({
+      await createMutation.mutateAsync({
         name: name.trim(),
         email: email.trim(),
+        password,
         role,
       });
 
-      toast.success("Invitation email sent successfully");
+      toast.success("Team member created successfully");
+
       setName("");
       setEmail("");
+      setPassword("");
       setRole("EMPLOYEE");
     } catch (error: unknown) {
-      toast.error(getErrorMessage(error, "Failed to send invitation"));
+      toast.error(
+        getErrorMessage(error, "Failed to create team member"),
+      );
     }
   }
 
   async function handleRoleChange(
     member: TeamMember,
-    newRole: "MANAGER" | "EMPLOYEE",
+    newRole: AssignableTeamRole,
   ) {
     try {
       await updateRoleMutation.mutateAsync({
-        memberId: member.id,
-        data: { role: newRole },
+         memberId: member.id,
+  input: {
+    role: newRole,
+  },
       });
 
       toast.success("Team member role updated");
     } catch (error: unknown) {
-      toast.error(getErrorMessage(error, "Failed to update team member role"));
+      toast.error(
+        getErrorMessage(error, "Failed to update team member role"),
+      );
     }
   }
 
@@ -107,12 +117,15 @@ export default function TeamManagement({
       await removeMutation.mutateAsync(member.id);
       toast.success("Team member deactivated");
     } catch (error: unknown) {
-      toast.error(getErrorMessage(error, "Failed to remove team member"));
+      toast.error(
+        getErrorMessage(error, "Failed to remove team member"),
+      );
     }
   }
 
   return (
     <section className="space-y-6 rounded-2xl border border-gray-200/80 bg-white p-6 shadow-xs dark:border-gray-800 dark:bg-gray-900">
+
       <div className="flex items-center gap-3">
         <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-indigo-50 text-indigo-600 dark:bg-indigo-500/10 dark:text-indigo-400">
           <Users size={20} />
@@ -130,15 +143,16 @@ export default function TeamManagement({
 
       {isAdmin && (
         <form
-          onSubmit={handleInvite}
+          onSubmit={handleCreateMember}
           className="space-y-4 rounded-xl border border-gray-200 p-4 dark:border-gray-800"
         >
           <h3 className="flex items-center gap-2 text-sm font-semibold text-gray-900 dark:text-white">
             <UserPlus size={16} />
-            Invite a Team Member
+            Add a Team Member
           </h3>
 
           <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+
             <div>
               <label
                 htmlFor="team-name"
@@ -146,6 +160,7 @@ export default function TeamManagement({
               >
                 Full Name
               </label>
+
               <input
                 id="team-name"
                 required
@@ -165,6 +180,7 @@ export default function TeamManagement({
               >
                 Email Address
               </label>
+
               <input
                 id="team-email"
                 type="email"
@@ -176,6 +192,33 @@ export default function TeamManagement({
                 className="w-full rounded-lg border border-gray-200 bg-white px-3 py-2.5 text-sm text-gray-900 outline-none focus:border-indigo-500 dark:border-gray-700 dark:bg-gray-950 dark:text-white"
               />
             </div>
+
+          </div>
+
+          <div>
+            <label
+              htmlFor="team-password"
+              className="mb-1.5 block text-xs font-medium text-gray-600 dark:text-gray-300"
+            >
+              Temporary Password
+            </label>
+
+            <input
+              id="team-password"
+              type="password"
+              required
+              minLength={8}
+              maxLength={72}
+              value={password}
+              onChange={(event) => setPassword(event.target.value)}
+              placeholder="Enter temporary password"
+              autoComplete="new-password"
+              className="w-full rounded-lg border border-gray-200 bg-white px-3 py-2.5 text-sm text-gray-900 outline-none focus:border-indigo-500 dark:border-gray-700 dark:bg-gray-950 dark:text-white"
+            />
+
+            <p className="mt-1 text-xs text-gray-500 dark:text-gray-400">
+              Share this password securely with the team member.
+            </p>
           </div>
 
           <div>
@@ -185,6 +228,7 @@ export default function TeamManagement({
             >
               Assign Role
             </label>
+
             <select
               id="team-role"
               value={role}
@@ -202,24 +246,29 @@ export default function TeamManagement({
 
           <button
             type="submit"
-            disabled={inviteMutation.isPending}
+            disabled={createMutation.isPending}
             className="inline-flex items-center justify-center gap-2 rounded-xl bg-indigo-600 px-4 py-2.5 text-sm font-semibold text-white transition hover:bg-indigo-700 disabled:cursor-not-allowed disabled:opacity-50"
           >
-            {inviteMutation.isPending ? (
+            {createMutation.isPending ? (
               <Loader2 size={16} className="animate-spin" />
             ) : (
               <UserPlus size={16} />
             )}
-            {inviteMutation.isPending ? "Sending..." : "Send Invitation"}
+
+            {createMutation.isPending
+              ? "Creating..."
+              : "Add Team Member"}
           </button>
         </form>
       )}
 
       <div className="space-y-3">
+
         <div className="flex items-center justify-between">
           <h3 className="text-sm font-semibold text-gray-900 dark:text-white">
             Workspace Members
           </h3>
+
           <span className="rounded-full bg-gray-100 px-2.5 py-1 text-xs font-semibold text-gray-600 dark:bg-gray-800 dark:text-gray-300">
             {members.filter((member) => member.isActive).length} active
           </span>
@@ -253,6 +302,7 @@ export default function TeamManagement({
             className="flex flex-col gap-4 rounded-xl border border-gray-200 p-4 dark:border-gray-800 sm:flex-row sm:items-center sm:justify-between"
           >
             <div className="flex min-w-0 items-center gap-3">
+
               <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-indigo-50 font-semibold text-indigo-600 dark:bg-indigo-500/10 dark:text-indigo-400">
                 {member.name.charAt(0).toUpperCase()}
               </div>
@@ -261,6 +311,7 @@ export default function TeamManagement({
                 <p className="truncate text-sm font-semibold text-gray-900 dark:text-white">
                   {member.name}
                 </p>
+
                 <p className="truncate text-xs text-gray-500 dark:text-gray-400">
                   {member.email}
                 </p>
@@ -271,10 +322,12 @@ export default function TeamManagement({
                   {!member.isActive && " · Inactive"}
                 </span>
               </div>
+
             </div>
 
             {isAdmin && member.role !== "ADMIN" && member.isActive && (
               <div className="flex items-center gap-2">
+
                 <select
                   aria-label={`Role for ${member.name}`}
                   value={member.role}
@@ -300,10 +353,12 @@ export default function TeamManagement({
                 >
                   <Trash2 size={15} />
                 </button>
+
               </div>
             )}
           </div>
         ))}
+
       </div>
     </section>
   );

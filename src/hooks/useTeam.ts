@@ -1,16 +1,13 @@
-import {
-  useQuery,
-  useMutation,
-  useQueryClient,
-} from "@tanstack/react-query";
-
+import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { teamService } from "@/src/services/team.service";
+import type { UpdateTeamRoleInput } from "@/src/types/team.types";
 
-import type {
-  CreateInvitationInput,
-  AcceptInvitationInput,
-  UpdateTeamRoleInput,
-} from "@/src/types/team.types";
+export interface CreateTeamMemberInput {
+  name: string;
+  email: string;
+  password: string;
+  role: "MANAGER" | "EMPLOYEE";
+}
 
 export const teamKeys = {
   all: ["team"] as const,
@@ -24,27 +21,13 @@ export function useTeamMembers() {
   });
 }
 
-export function useCreateTeamInvitation() {
+export function useCreateTeamMember() {
   const queryClient = useQueryClient();
 
   return useMutation({
-    mutationFn: (input: CreateInvitationInput) =>
-      teamService.createInvitation(input),
+    mutationFn: (input: CreateTeamMemberInput) =>
+      teamService.createMember(input),
 
-    onSuccess: async () => {
-      await queryClient.invalidateQueries({
-        queryKey: teamKeys.all,
-      });
-    },
-  });
-}
-
-export function useAcceptTeamInvitation() {
-  const queryClient = useQueryClient();
-
-  return useMutation({
-    mutationFn: (input: AcceptInvitationInput) =>
-      teamService.acceptInvitation(input),
     onSuccess: async () => {
       await queryClient.invalidateQueries({
         queryKey: teamKeys.all,
@@ -59,11 +42,11 @@ export function useUpdateTeamRole() {
   return useMutation({
     mutationFn: ({
       memberId,
-      data,
+      input,
     }: {
       memberId: string;
-      data: UpdateTeamRoleInput;
-    }) => teamService.updateMemberRole(memberId, data),
+      input: UpdateTeamRoleInput;
+    }) => teamService.updateMemberRole(memberId, input),
 
     onSuccess: async () => {
       await queryClient.invalidateQueries({

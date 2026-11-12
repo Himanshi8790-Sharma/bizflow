@@ -1,8 +1,7 @@
 "use client";
 
 import { useMemo, useState } from "react";
-import { Pencil, Trash2 } from "lucide-react";
-import { toast } from "sonner";
+import { Pencil, Trash2, ShieldAlert } from "lucide-react";
 
 import DashboardLayout from "@/src/components/dashboard/DashboardLayout";
 import ExpensesPageHeader from "@/src/components/expenses/ExpensesPageHeader";
@@ -13,11 +12,21 @@ import { useExpenses } from "@/src/hooks/useExpenses";
 import type { Expense } from "@/src/types/expense";
 
 export default function ExpensesPage() {
-  const { data: expenses = [], isLoading, isError } = useExpenses();
+  const {
+    data: expenses = [],
+    isLoading,
+    isError,
+    error,
+  } = useExpenses();
 
   const [formOpen, setFormOpen] = useState(false);
   const [selectedExpense, setSelectedExpense] = useState<Expense | null>(null);
   const [deleteOpen, setDeleteOpen] = useState(false);
+
+  // Check whether the backend returned 403 Forbidden
+  const isForbidden =
+    (error as { response?: { status?: number } } | null)?.response?.status ===
+    403;
 
   const totalExpenses = useMemo(
     () => expenses.reduce((total, expense) => total + expense.amount, 0),
@@ -47,6 +56,30 @@ export default function ExpensesPage() {
   function handleDeleteExpense(expense: Expense) {
     setSelectedExpense(expense);
     setDeleteOpen(true);
+  }
+
+  // Restricted access UI for MANAGER and EMPLOYEE
+  if (isForbidden) {
+    return (
+      <DashboardLayout>
+        <div className="p-4 md:p-6">
+          <div className="flex min-h-[400px] flex-col items-center justify-center rounded-xl border bg-card p-8 text-center shadow-sm">
+            <div className="mb-4 flex h-14 w-14 items-center justify-center rounded-full bg-muted">
+              <ShieldAlert className="h-7 w-7 text-muted-foreground" />
+            </div>
+
+            <h2 className="text-xl font-semibold">
+              Access Restricted
+            </h2>
+
+            <p className="mt-2 max-w-md text-sm text-muted-foreground">
+              You don't have access to view expenses.
+              Please contact your administrator if you need permission.
+            </p>
+          </div>
+        </div>
+      </DashboardLayout>
+    );
   }
 
   return (

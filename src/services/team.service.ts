@@ -1,11 +1,9 @@
+
 import { api } from "@/src/lib/api";
 
 import type {
   TeamMember,
-  CreateInvitationInput,
-  AcceptInvitationInput,
   UpdateTeamRoleInput,
-  TeamInvitation,
 } from "@/src/types/team.types";
 
 interface ApiResponse<T> {
@@ -14,11 +12,22 @@ interface ApiResponse<T> {
   data: T;
 }
 
+export interface CreateTeamMemberInput {
+  name: string;
+  email: string;
+  password: string;
+  role: "MANAGER" | "EMPLOYEE";
+}
+
 function getResponseData<T>(
   response: ApiResponse<T>,
   fallbackMessage: string,
 ): T {
-  if (!response.success || response.data === undefined || response.data === null) {
+  if (
+    !response.success ||
+    response.data === undefined ||
+    response.data === null
+  ) {
     throw new Error(response.message ?? fallbackMessage);
   }
 
@@ -26,8 +35,10 @@ function getResponseData<T>(
 }
 
 export const teamService = {
+  // GET TEAM MEMBERS
   async getMembers(): Promise<TeamMember[]> {
     const response = await api.get<ApiResponse<TeamMember[]>>("/team");
+
     const members = getResponseData(
       response.data,
       "The team API returned an unsuccessful response.",
@@ -40,34 +51,22 @@ export const teamService = {
     return members;
   },
 
-  async createInvitation(
-    input: CreateInvitationInput,
-  ): Promise<TeamInvitation> {
-    const response = await api.post<ApiResponse<TeamInvitation>>(
-      "/team/invitations",
-      input,
-    );
-
-    return getResponseData(
-      response.data,
-      "The team invitation API returned an unsuccessful response.",
-    );
-  },
-
-  async acceptInvitation(
-    input: AcceptInvitationInput,
+  // CREATE TEAM MEMBER
+  async createMember(
+    input: CreateTeamMemberInput,
   ): Promise<TeamMember> {
     const response = await api.post<ApiResponse<TeamMember>>(
-      "/team/invitations/accept",
+      "/team/members",
       input,
     );
 
     return getResponseData(
       response.data,
-      "The invitation acceptance API returned an unsuccessful response.",
+      "Failed to create team member.",
     );
   },
 
+  // UPDATE MEMBER ROLE
   async updateMemberRole(
     memberId: string,
     input: UpdateTeamRoleInput,
@@ -83,6 +82,7 @@ export const teamService = {
     );
   },
 
+  // REMOVE MEMBER
   async removeMember(memberId: string): Promise<TeamMember> {
     const response = await api.delete<ApiResponse<TeamMember>>(
       `/team/${encodeURIComponent(memberId)}`,
